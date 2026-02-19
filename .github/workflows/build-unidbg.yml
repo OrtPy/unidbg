@@ -1,0 +1,40 @@
+name: Build unidbg (Maven)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 8 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: maven
+
+      - name: Build (package)
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -DskipTests package
+
+      - name: Package build outputs into a zip
+        run: |
+          python3 .github/scripts/package_unidbg_artifacts.py
+
+      - name: Upload zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unidbg-build-${{ github.sha }}
+          path: dist/unidbg-build-${{ github.sha }}.zip
+          if-no-files-found: error
