@@ -23,17 +23,17 @@ jobs:
           java-version: "8"
           cache: maven
 
-      # NOTE:
-      # - Use "install" so SNAPSHOT modules are available to subsequent Maven invocations.
-      # - Skip GPG signing on CI runners (no private key).
+      # Build all modules, put SNAPSHOTs into ~/.m2, and skip GPG signing on CI.
       - name: Build (install, skip gpg)
         run: |
           chmod +x mvnw
           ./mvnw -B -DskipTests -Dgpg.skip=true install
 
+      # Copy runtime deps to a ROOT-level folder (absolute path), not module-relative.
       - name: Collect runtime dependencies (unidbg-android)
         run: |
-          ./mvnw -B -DskipTests -Dgpg.skip=true -pl unidbg-android             dependency:copy-dependencies             -DincludeScope=runtime             -DoutputDirectory=dist/deps
+          mkdir -p "$GITHUB_WORKSPACE/dist/deps"
+          ./mvnw -B -DskipTests -Dgpg.skip=true -pl unidbg-android             dependency:copy-dependencies             -DincludeScope=runtime             -DoutputDirectory="$GITHUB_WORKSPACE/dist/deps"
 
       - name: Package outputs (module jars + deps) into a zip
         run: |
