@@ -1,0 +1,45 @@
+name: Build unidbg (Maven) + runtime deps zip
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 8 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: maven
+
+      - name: Build (package)
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -DskipTests package
+
+      # Collect runtime dependencies for unidbg-android (includes transitive deps from Maven Central)
+      - name: Collect runtime dependencies (unidbg-android)
+        run: |
+          ./mvnw -B -DskipTests -pl unidbg-android -am             dependency:copy-dependencies             -DincludeScope=runtime             -DoutputDirectory=dist/deps
+
+      - name: Package outputs (module jars + deps) into a zip
+        run: |
+          python3 .github/scripts/package_unidbg_artifacts_with_deps.py
+
+      - name: Upload zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unidbg-runtime-${{ github.sha }}
+          path: dist/unidbg-runtime-${{ github.sha }}.zip
+          if-no-files-found: error
