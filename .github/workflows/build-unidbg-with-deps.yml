@@ -23,15 +23,18 @@ jobs:
           java-version: "8"
           cache: maven
 
-      - name: Build (package)
+      # IMPORTANT:
+      # Use "install" so SNAPSHOT modules (unidbg-api etc.) are placed into the runner's ~/.m2.
+      # Otherwise a second Maven invocation (copy-dependencies) may fail to resolve reactor artifacts.
+      - name: Build (install)
         run: |
           chmod +x mvnw
-          ./mvnw -B -DskipTests package
+          ./mvnw -B -DskipTests install
 
-      # Collect runtime dependencies for unidbg-android (includes transitive deps from Maven Central)
+      # Collect runtime dependencies for unidbg-android (transitive deps from Maven Central)
       - name: Collect runtime dependencies (unidbg-android)
         run: |
-          ./mvnw -B -DskipTests -pl unidbg-android -am             dependency:copy-dependencies             -DincludeScope=runtime             -DoutputDirectory=dist/deps
+          ./mvnw -B -DskipTests -pl unidbg-android             dependency:copy-dependencies             -DincludeScope=runtime             -DoutputDirectory=dist/deps
 
       - name: Package outputs (module jars + deps) into a zip
         run: |
